@@ -55,5 +55,18 @@ class NumberTokenType(TokenType):
         return start_of_query[0] in NumberTokenType.symbols
 
 
-query = '455 / 15.2 * "Hello" + 12'
-print(TokenType.get_token_type(query[6]).get_token_value(query, 6))
+def tokenize(query):
+    tokens = []
+    start_index = 0
+
+    while start_index < len(query):
+        token_type = TokenType.get_token_type(query[start_index:])
+        value, start_index = token_type.get_token_value(query, start_index)
+        tokens.append(value)
+
+    return tokens
+
+
+# query = '455 / 15.2 * "Hello" + 12'
+query = '455"Hello"78.24"Renuka""Fernando"'
+print(tokenize(query))
