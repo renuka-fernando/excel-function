@@ -1,4 +1,5 @@
-token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType', 'BinaryOperatorTokenType']
+token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType', 'BinaryOperatorTokenType',
+               'GroupSymbolTokenType']
 
 
 class TokenType:
@@ -63,7 +64,7 @@ class NumberTokenType(TokenType):
     @staticmethod
     def get_token_value(query, start_index):
         i = 1
-        while query[start_index + i] in NumberTokenType.symbols:
+        while start_index + i < len(query) and query[start_index + i] in NumberTokenType.symbols:
             i += 1
         value = query[start_index:start_index + i]
         if '.' in value:
@@ -97,6 +98,20 @@ class BinaryOperatorTokenType(TokenType):
     def is_this_type(start_of_query):
         return start_of_query[0] in BinaryOperatorTokenType.symbols
 
+
+class GroupSymbolTokenType(TokenType):
+    value = "GroupSymbol"
+    symbols = '[]'
+
+    @staticmethod
+    def get_token_value(query, start_index):
+        return query[start_index], start_index + 1
+
+    @staticmethod
+    def is_this_type(start_of_query):
+        return start_of_query[0] in GroupSymbolTokenType.symbols
+
+
 def tokenize(query):
     tokens = []
     start_index = 0
@@ -112,5 +127,5 @@ def tokenize(query):
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '  455  "Hello" 12.2 + 78.24  "Renuka"  "Fernando"'
+query = '"Salary" * ["Bonus"*0.12] / 5'
 print(tokenize(query))
