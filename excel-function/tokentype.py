@@ -65,7 +65,13 @@ class NumberTokenType(TokenType):
         i = 1
         while query[start_index + i] in NumberTokenType.symbols:
             i += 1
-        return query[start_index:start_index + i], start_index + i
+        value = query[start_index:start_index + i]
+        if '.' in value:
+            value = float(value)
+        else:
+            value = int(value)
+
+        return value, start_index + i
 
     @staticmethod
     def is_this_type(start_of_query):
