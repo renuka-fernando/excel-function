@@ -1,4 +1,4 @@
-token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType']
+token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType', 'BinaryOperatorTokenType']
 
 
 class TokenType:
@@ -78,6 +78,25 @@ class NumberTokenType(TokenType):
         return start_of_query[0] in NumberTokenType.symbols
 
 
+class BinaryOperatorTokenType(TokenType):
+    value = "BinaryOperator"
+    symbols = '+-*/'
+    binary_operations = {
+        '+': lambda x, y: x + y,
+        '-': lambda x, y: x - y,
+        '*': lambda x, y: x * y,
+        '/': lambda x, y: x / y,
+    }
+
+    @staticmethod
+    def get_token_value(query, start_index):
+        operator = query[start_index]
+        return BinaryOperatorTokenType.binary_operations[operator], start_index + 1
+
+    @staticmethod
+    def is_this_type(start_of_query):
+        return start_of_query[0] in BinaryOperatorTokenType.symbols
+
 def tokenize(query):
     tokens = []
     start_index = 0
@@ -86,12 +105,12 @@ def tokenize(query):
         token_type = TokenType.get_token_type(query[start_index:])
         value, start_index = token_type.get_token_value(query, start_index)
 
-        if value != None:
+        if value is not None:
             tokens.append(value)
 
     return tokens
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '  455  "Hello"  78.24  "Renuka"  "Fernando"'
+query = '  455  "Hello" 12.2 + 78.24  "Renuka"  "Fernando"'
 print(tokenize(query))
