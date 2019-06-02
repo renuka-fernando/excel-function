@@ -12,6 +12,15 @@ FUNCTION_SYMBOL = {
     'arg_separator': ','
 }
 
+BINARY_FUNCTIONS = {
+    '+': lambda x, y: x + y,
+    '-': lambda x, y: x - y,
+    '*': lambda x, y: x * y,
+    '/': lambda x, y: x / y,
+    '>': lambda x, y: x > y,
+    '<': lambda x, y: x < y
+}
+
 FUNCTIONS = {
     'sum': lambda args: sum(args),
     'if': lambda args: args[1] if args[0] else args[2]
@@ -27,7 +36,7 @@ def query_executor(query_tokens):
         elif token.token_type == FieldTokenType.value:
             token = Token(extract_field_value(token.value), NumberTokenType.value)
         elif token.token_type == FunctionTokenType.value:
-            func = FUNCTIONS[token.value['function_name']]
+            func = FUNCTIONS[token.value['function_name'].lower()]
             args = token.value['arguments']
             token = Token(func(args), NumberTokenType.value)
 
@@ -122,19 +131,11 @@ class NumberTokenType(TokenType):
 class BinaryOperatorTokenType(TokenType):
     value = "BinaryOperator"
     symbols = '+-*/><'
-    binary_operations = {
-        '+': lambda x, y: x + y,
-        '-': lambda x, y: x - y,
-        '*': lambda x, y: x * y,
-        '/': lambda x, y: x / y,
-        '>': lambda x, y: x > y,
-        '<': lambda x, y: x < y
-    }
 
     @staticmethod
     def get_token_and_start_index(query, start_index):
         operator = query[start_index]
-        return Token(BinaryOperatorTokenType.binary_operations[operator],
+        return Token(BINARY_FUNCTIONS[operator],
                      BinaryOperatorTokenType.value), start_index + 1
 
     @staticmethod
@@ -144,7 +145,7 @@ class BinaryOperatorTokenType(TokenType):
 
 class FunctionTokenType(TokenType):
     value = "FUNCTION"
-    symbols = 'abcdefghijklmnopqrstuvwxyz'
+    symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
     @staticmethod
     def get_token_and_start_index(query, start_index):
@@ -225,5 +226,5 @@ def extract_field_value(field_name):
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '10 + if( 30 > 12 * 2, 2, 100)'
+query = '10 + [if( 30 > 12 * 2, 2, 100) * 5]'
 print(query_executor(tokenize(query)))
