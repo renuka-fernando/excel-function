@@ -22,7 +22,7 @@ class TokenType:
                 return eval(token_type)
 
     @staticmethod
-    def get_token_value(query, start_index):
+    def get_token_and_start_index(query, start_index):
         return NotImplementedError()
 
     @staticmethod
@@ -35,7 +35,7 @@ class IgnoreTokenType(TokenType):
     symbols = ' '
 
     @staticmethod
-    def get_token_value(query, start_index):
+    def get_token_and_start_index(query, start_index):
         i = 1
         while query[start_index + i] in IgnoreTokenType.symbols:
             i += 1
@@ -51,7 +51,7 @@ class FieldTokenType(TokenType):
     symbols = '"'
 
     @staticmethod
-    def get_token_value(query, start_index):
+    def get_token_and_start_index(query, start_index):
         i = 1
         while query[start_index + i] != FieldTokenType.symbols:
             i += 1
@@ -67,7 +67,7 @@ class NumberTokenType(TokenType):
     symbols = '0123456789.'
 
     @staticmethod
-    def get_token_value(query, start_index):
+    def get_token_and_start_index(query, start_index):
         i = 1
         while start_index + i < len(query) and query[start_index + i] in NumberTokenType.symbols:
             i += 1
@@ -95,7 +95,7 @@ class BinaryOperatorTokenType(TokenType):
     }
 
     @staticmethod
-    def get_token_value(query, start_index):
+    def get_token_and_start_index(query, start_index):
         operator = query[start_index]
         return Token(BinaryOperatorTokenType.binary_operations[operator],
                      BinaryOperatorTokenType.value), start_index + 1
@@ -110,7 +110,7 @@ class GroupSymbolTokenType(TokenType):
     symbols = GROUP_SYMBOL.values()
 
     @staticmethod
-    def get_token_value(query, start_index):
+    def get_token_and_start_index(query, start_index):
         i = 1
         open_count = 1
         while start_index + i < len(query) and open_count > 0:
@@ -140,7 +140,7 @@ def tokenize(query):
 
     while start_index < len(query):
         token_type = TokenType.get_token_type(query[start_index:])
-        token, start_index = token_type.get_token_value(query, start_index)
+        token, start_index = token_type.get_token_and_start_index(query, start_index)
 
         if token.token_type != IgnoreTokenType.value:
             tokens.append(token)
@@ -148,12 +148,18 @@ def tokenize(query):
     return tokens
 
 
-def binary_executor(query_tokens):
+def extract_field_value(field_name):
+    return 10
+
+
+def query_executor(query_tokens):
     operands = []
     operators = []
     for token in query_tokens:
         if token.token_type == GroupSymbolTokenType.value:
-            token = Token(binary_executor(token.value), NumberTokenType.value)
+            token = Token(query_executor(token.value), NumberTokenType.value)
+        elif token.token_type == FieldTokenType.value:
+            token = Token(extract_field_value(token.value), NumberTokenType.value)
 
         if token.token_type == NumberTokenType.value:
             if len(operators) == 0:
@@ -167,5 +173,5 @@ def binary_executor(query_tokens):
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '1 + [[[15 / 2] + [5 * 2]] * 2]'
-print(binary_executor(tokenize(query)))
+query = '1 + [[["Renuka" / 2] + [5 * 2]] * 2]'
+print(query_executor(tokenize(query)))
