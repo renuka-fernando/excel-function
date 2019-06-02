@@ -39,7 +39,7 @@ class IgnoreTokenType(TokenType):
         i = 1
         while query[start_index + i] in IgnoreTokenType.symbols:
             i += 1
-        return None, start_index + i
+        return Token(None, IgnoreTokenType.value), start_index + i
 
     @staticmethod
     def is_this_type(start_of_query):
@@ -55,7 +55,7 @@ class FieldTokenType(TokenType):
         i = 1
         while query[start_index + i] != FieldTokenType.symbols:
             i += 1
-        return query[start_index + 1:start_index + i], start_index + i + 1
+        return Token(query[start_index + 1:start_index + i], FieldTokenType.value), start_index + i + 1
 
     @staticmethod
     def is_this_type(start_of_query):
@@ -63,7 +63,7 @@ class FieldTokenType(TokenType):
 
 
 class NumberTokenType(TokenType):
-    value = "Number"
+    value = "OPERAND"
     symbols = '0123456789.'
 
     @staticmethod
@@ -77,7 +77,7 @@ class NumberTokenType(TokenType):
         else:
             value = int(value)
 
-        return value, start_index + i
+        return Token(value, NumberTokenType.value), start_index + i
 
     @staticmethod
     def is_this_type(start_of_query):
@@ -97,7 +97,8 @@ class BinaryOperatorTokenType(TokenType):
     @staticmethod
     def get_token_value(query, start_index):
         operator = query[start_index]
-        return BinaryOperatorTokenType.binary_operations[operator], start_index + 1
+        return Token(BinaryOperatorTokenType.binary_operations[operator],
+                     BinaryOperatorTokenType.value), start_index + 1
 
     @staticmethod
     def is_this_type(start_of_query):
@@ -105,7 +106,7 @@ class BinaryOperatorTokenType(TokenType):
 
 
 class GroupSymbolTokenType(TokenType):
-    value = "GroupSymbol"
+    value = "QUERY"
     symbols = GROUP_SYMBOL.values()
 
     @staticmethod
@@ -119,11 +120,18 @@ class GroupSymbolTokenType(TokenType):
                 open_count -= 1
             i += 1
 
-        return tokenize(query[start_index + 1: start_index + i - 1]), start_index + i
+        return Token(tokenize(query[start_index + 1: start_index + i - 1]), GroupSymbolTokenType.value), start_index + i
 
     @staticmethod
     def is_this_type(start_of_query):
         return start_of_query[0] in GroupSymbolTokenType.symbols
+
+
+class Token:
+
+    def __init__(self, value, token_type):
+        self.value = value
+        self.token_type = token_type
 
 
 def tokenize(query):
@@ -132,14 +140,32 @@ def tokenize(query):
 
     while start_index < len(query):
         token_type = TokenType.get_token_type(query[start_index:])
-        value, start_index = token_type.get_token_value(query, start_index)
+        token, start_index = token_type.get_token_value(query, start_index)
 
-        if value is not None:
-            tokens.append(value)
+        if token.token_type != IgnoreTokenType.value:
+            tokens.append(token)
 
     return tokens
 
 
+def binary_executor(query_tokens):
+    operands = []
+    operators = []
+    for token in query_tokens:
+        if token.token_type == GroupSymbolTokenType.value:
+            token = Token(binary_executor(token.value), NumberTokenType.value)
+
+        if token.token_type == NumberTokenType.value:
+            if len(operators) == 0:
+                operands.append(token)
+            else:
+                operands.append(Token(operators.pop().value(operands.pop().value, token.value), NumberTokenType.value))
+        elif token.token_type == BinaryOperatorTokenType.value:
+            operators.append(token)
+
+    return operands[0].value
+
+
 # query = '455 / 15.2 * "Hello" + 12'
-query = '"Salary" * ["Bonus" + [0.12*"Salary"]] / 5'
-print(tokenize(query))
+query = '1 + [[[15 / 2] + [5 * 2]] * 2]'
+print(binary_executor(tokenize(query)))
