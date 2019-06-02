@@ -1,9 +1,19 @@
 token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType', 'BinaryOperatorTokenType',
-               'GroupSymbolTokenType']
+               'GroupSymbolTokenType', 'FunctionTokenType']
 
 GROUP_SYMBOL = {
     'open': '[',
     'close': ']'
+}
+
+FUNCTION_SYMBOL = {
+    'open': '(',
+    'close': ')',
+    'arg_separator': ','
+}
+
+FUNCTIONS = {
+    'sum': lambda args: sum(args)
 }
 
 
@@ -105,6 +115,44 @@ class BinaryOperatorTokenType(TokenType):
         return start_of_query[0] in BinaryOperatorTokenType.symbols
 
 
+class FunctionTokenType(TokenType):
+    value = "FUNCTION"
+    symbols = 'abcdefghijklmnopqrstuvwxyz'
+
+    @staticmethod
+    def get_token_and_start_index(query, start_index):
+        i = 1
+        while start_index + i < len(query) and query[start_index + i] != FUNCTION_SYMBOL['open']:
+            i += 1
+        function_name = query[start_index: start_index + i]
+        j = i + 1
+        arg_start = j
+        open_count = 1
+        arguments = []
+        while start_index + j < len(query) and open_count > 0:
+            if query[start_index + j] == FUNCTION_SYMBOL['open']:
+                open_count += 1
+            if query[start_index + j] == FUNCTION_SYMBOL['close']:
+                open_count -= 1
+            if query[start_index + j] == FUNCTION_SYMBOL['arg_separator'] and open_count == 1:
+                arguments.append(query[start_index + arg_start: start_index + j])
+                arg_start = j + 1
+
+            j += 1
+        arguments.append(query[start_index + arg_start: start_index + j - 1])
+
+        argument_tokens = []
+        for arg in arguments:
+            argument_tokens.extend(tokenize(arg))
+
+        return Token({'function_name': function_name, 'arguments': argument_tokens},
+                     FunctionTokenType.value), start_index + j + 1
+
+    @staticmethod
+    def is_this_type(start_of_query):
+        return start_of_query[0] in FunctionTokenType.symbols
+
+
 class GroupSymbolTokenType(TokenType):
     value = "QUERY"
     symbols = GROUP_SYMBOL.values()
@@ -160,6 +208,11 @@ def query_executor(query_tokens):
             token = Token(query_executor(token.value), NumberTokenType.value)
         elif token.token_type == FieldTokenType.value:
             token = Token(extract_field_value(token.value), NumberTokenType.value)
+        elif token.token_type == FunctionTokenType.value:
+            func = FUNCTIONS[token.value['function_name']]
+            args = token.value['arguments']
+            args = [query_executor([arg]) for arg in args]
+            token = Token(func(args), NumberTokenType.value)
 
         if token.token_type == NumberTokenType.value:
             if len(operators) == 0:
@@ -173,5 +226,5 @@ def query_executor(query_tokens):
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '1 + [[["Renuka" / 2] + [5 * 2]] * 2]'
+query = '1 + sum(1, 2, sum(4, 7), 3) + 2'
 print(query_executor(tokenize(query)))
