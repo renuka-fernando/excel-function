@@ -1,6 +1,11 @@
 token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType', 'BinaryOperatorTokenType',
                'GroupSymbolTokenType']
 
+GROUP_SYMBOL = {
+    'open': '[',
+    'close': ']'
+}
+
 
 class TokenType:
     value = None
@@ -101,11 +106,20 @@ class BinaryOperatorTokenType(TokenType):
 
 class GroupSymbolTokenType(TokenType):
     value = "GroupSymbol"
-    symbols = '[]'
+    symbols = GROUP_SYMBOL.values()
 
     @staticmethod
     def get_token_value(query, start_index):
-        return query[start_index], start_index + 1
+        i = 1
+        open_count = 1
+        while start_index + i < len(query) and open_count > 0:
+            if query[start_index + i] == GROUP_SYMBOL['open']:
+                open_count += 1
+            elif query[start_index + i] == GROUP_SYMBOL['close']:
+                open_count -= 1
+            i += 1
+
+        return tokenize(query[start_index + 1: start_index + i - 1]), start_index + i
 
     @staticmethod
     def is_this_type(start_of_query):
@@ -127,5 +141,5 @@ def tokenize(query):
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '"Salary" * ["Bonus"*0.12] / 5'
+query = '"Salary" * ["Bonus" + [0.12*"Salary"]] / 5'
 print(tokenize(query))
