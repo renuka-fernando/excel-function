@@ -13,8 +13,33 @@ FUNCTION_SYMBOL = {
 }
 
 FUNCTIONS = {
-    'sum': lambda args: sum(args)
+    'sum': lambda args: sum(args),
+    'if': lambda args: args[1] if args[0] else args[2]
 }
+
+
+def query_executor(query_tokens):
+    operands = []
+    operators = []
+    for token in query_tokens:
+        if token.token_type == GroupSymbolTokenType.value:
+            token = Token(query_executor(token.value), NumberTokenType.value)
+        elif token.token_type == FieldTokenType.value:
+            token = Token(extract_field_value(token.value), NumberTokenType.value)
+        elif token.token_type == FunctionTokenType.value:
+            func = FUNCTIONS[token.value['function_name']]
+            args = token.value['arguments']
+            token = Token(func(args), NumberTokenType.value)
+
+        if token.token_type == NumberTokenType.value:
+            if len(operators) == 0:
+                operands.append(token)
+            else:
+                operands.append(Token(operators.pop().value(operands.pop().value, token.value), NumberTokenType.value))
+        elif token.token_type == BinaryOperatorTokenType.value:
+            operators.append(token)
+
+    return operands[0].value
 
 
 class TokenType:
@@ -96,12 +121,14 @@ class NumberTokenType(TokenType):
 
 class BinaryOperatorTokenType(TokenType):
     value = "BinaryOperator"
-    symbols = '+-*/'
+    symbols = '+-*/><'
     binary_operations = {
         '+': lambda x, y: x + y,
         '-': lambda x, y: x - y,
         '*': lambda x, y: x * y,
         '/': lambda x, y: x / y,
+        '>': lambda x, y: x > y,
+        '<': lambda x, y: x < y
     }
 
     @staticmethod
@@ -140,12 +167,9 @@ class FunctionTokenType(TokenType):
 
             j += 1
         arguments.append(query[start_index + arg_start: start_index + j - 1])
+        executed_arguments = [query_executor(tokenize(arg)) for arg in arguments]
 
-        argument_tokens = []
-        for arg in arguments:
-            argument_tokens.extend(tokenize(arg))
-
-        return Token({'function_name': function_name, 'arguments': argument_tokens},
+        return Token({'function_name': function_name, 'arguments': executed_arguments},
                      FunctionTokenType.value), start_index + j + 1
 
     @staticmethod
@@ -200,31 +224,6 @@ def extract_field_value(field_name):
     return 10
 
 
-def query_executor(query_tokens):
-    operands = []
-    operators = []
-    for token in query_tokens:
-        if token.token_type == GroupSymbolTokenType.value:
-            token = Token(query_executor(token.value), NumberTokenType.value)
-        elif token.token_type == FieldTokenType.value:
-            token = Token(extract_field_value(token.value), NumberTokenType.value)
-        elif token.token_type == FunctionTokenType.value:
-            func = FUNCTIONS[token.value['function_name']]
-            args = token.value['arguments']
-            args = [query_executor([arg]) for arg in args]
-            token = Token(func(args), NumberTokenType.value)
-
-        if token.token_type == NumberTokenType.value:
-            if len(operators) == 0:
-                operands.append(token)
-            else:
-                operands.append(Token(operators.pop().value(operands.pop().value, token.value), NumberTokenType.value))
-        elif token.token_type == BinaryOperatorTokenType.value:
-            operators.append(token)
-
-    return operands[0].value
-
-
 # query = '455 / 15.2 * "Hello" + 12'
-query = '1 + sum(1, 2, sum(4, 7), 3) + 2'
+query = '10 + if( 30 > 12 * 2, 2, 100)'
 print(query_executor(tokenize(query)))
