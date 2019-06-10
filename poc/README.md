@@ -63,10 +63,10 @@ Run the file `python read-cells.py`
 ```py
 import pandas as pd
 
-df = pd.read_excel('Sample1-out.xlsx', 0, header=None)
+df = pd.read_excel('Sample1.xlsx', 0, header=None)
 print(df)
 
-df = pd.read_excel('Sample1-out.xlsx', 1, header=None)
+df = pd.read_excel('Sample1.xlsx', 1, header=None)
 print(df)
 ```
 

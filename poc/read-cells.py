@@ -4,8 +4,8 @@ import pandas as pd
 # Output is the worksheet Sample1-out.xlsx.
 # Open it using Pandas -> read values | this can also done using Apache POI or openpyxl
 
-df = pd.read_excel('Sample1-out.xlsx', 0, header=None)
+df = pd.read_excel('Sample1.xlsx', 0, header=None)
 print(df)
 
-df = pd.read_excel('Sample1-out.xlsx', 1, header=None)
+df = pd.read_excel('Sample1.xlsx', 1, header=None)
 print(df)
