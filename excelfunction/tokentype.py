@@ -1,3 +1,5 @@
+
+
 token_types = ['IgnoreTokenType', 'FieldTokenType', 'NumberTokenType', 'BinaryOperatorTokenType',
                'GroupSymbolTokenType', 'FunctionTokenType']
 
@@ -221,10 +223,11 @@ def tokenize(query):
     return tokens
 
 
-def extract_field_value(field_name):
-    return 10
+def extract_field_value(dataFrame, field_name):
+
+    return dataFrame[dataFrame[0] == field_name].iloc[0][1]
 
 
 # query = '455 / 15.2 * "Hello" + 12'
-query = '10 + [if( 30 > 12 * 2, 2, 100) * 5]'
+query = 'sum("Renuka" * 2, 3) * 2 + 4'
 print(query_executor(tokenize(query)))
